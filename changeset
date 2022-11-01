@@ -1,0 +1,5 @@
+A added_file.txt
+D deleted_file.txt
+M modified_file.txt
+R renamed_file.txt
+?? untracked_file.txt
