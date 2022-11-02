@@ -1,10 +1,12 @@
 use std::path::Path;
 
-pub struct ChangeSet {
-    file_name: Box<Path>,
-    action: Action,
+#[derive(Debug)]
+pub struct ChangeSet<'a> {
+    pub file_name: &'a Path,
+    pub action: Action,
 }
 
+#[derive(Debug)]
 pub enum Action {
     Add(),
     Modify(),
@@ -13,6 +15,6 @@ pub enum Action {
     Rename(),
 }
 
-pub fn run(_changes: Vec<ChangeSet>) {
-    println!("Hello from Brewmaster!")
+pub fn run(changes: Vec<ChangeSet>) {
+    println!("The changes are: {:?}", changes);
 }
