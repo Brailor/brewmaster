@@ -1,5 +1,5 @@
-A added_file.txt
-D deleted_file.txt
-M modified_file.txt
-R renamed_file.txt
-?? untracked_file.txt
+A keg/slug-1/README.md
+D keg/slug-2/deleted_file.txt
+M keg/slug-3/modified_file.txt
+R keg/slug-4/renamed_file.txt
+?? keg/slug-5/untracked_file.txt

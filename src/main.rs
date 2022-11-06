@@ -58,7 +58,7 @@ fn parse_args<'a>(changeset_raw: &'a str) -> Option<Vec<ChangeSet<'a>>> {
         })
         .map(|line| {
             let action = line.split(" ").nth(0).unwrap();
-            let file_name = line.split(" ").nth(1).unwrap();
+            let path = line.split(" ").nth(1).unwrap();
 
             let action = match action {
                 "??" => Action::Untrack(),
@@ -70,7 +70,7 @@ fn parse_args<'a>(changeset_raw: &'a str) -> Option<Vec<ChangeSet<'a>>> {
             };
 
             ChangeSet {
-                file_name: Path::new(file_name),
+                file_name: Path::new(path),
                 action,
             }
         })
