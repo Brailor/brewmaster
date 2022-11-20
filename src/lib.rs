@@ -1,5 +1,12 @@
-use globset::{Glob, GlobSetBuilder};
-use std::{collections::hash_map::Entry, fs, io, path::Path};
+use std::{fs, io, path::Path, time::Instant};
+
+const NODE_FILE_CONSTANTS: [&str; 3] = ["README.md", "FIGURE.", "DATA."];
+
+#[derive(Debug)]
+struct Entry {
+    slug: String,
+    entry_type: Type,
+}
 
 #[derive(Debug)]
 pub struct ChangeSet<'a> {
@@ -30,7 +37,7 @@ pub enum Type {
     Complex(NodeType, NodeType, NodeType),
 }
 
-pub fn run(changes: Vec<ChangeSet>) {
+pub fn run(changes: Vec<ChangeSet>) -> io::Result<()> {
     let changes: Vec<&ChangeSet> = changes
         .iter()
         .filter(|ch| match ch.action {
@@ -40,10 +47,19 @@ pub fn run(changes: Vec<ChangeSet>) {
         .collect();
 
     // detect the node type by inspect the slug/file_name
-    detect_node_types(changes);
+    let _entries = detect_node_types(changes)?;
+
+    // create isosec for each entry
+    let t = Instant::now();
+    println!("{:#?}", t);
+
+    Ok(())
 }
 
-const NODE_FILE_CONSTANTS: [&str; 3] = ["README.md", "FIGURE.", "DATA."];
+// isosec is
+// exec date -u +%Y%m%d%H%M%S "$@"
+fn create_isosec() {}
+
 // A directory can contain the following cases
 // README.md only -> NodeType::Text
 // DATA.* -> NodeType::Data
@@ -54,7 +70,7 @@ const NODE_FILE_CONSTANTS: [&str; 3] = ["README.md", "FIGURE.", "DATA."];
 // FIGURE.* + DATA.* -> ?
 // FIGURE.* + README.md -> ? how to specify priority between files (text + figure, figure + text)
 // README.md + DATA.* + FIGURE.* -> NodeType::Rich
-fn detect_node_types(changes: Vec<&ChangeSet>) -> io::Result<()> {
+fn detect_node_types(changes: Vec<&ChangeSet>) -> io::Result<Vec<Entry>> {
     let dirs: Vec<(String, Vec<String>)> = changes
         .iter()
         .map(|ch| ch.file_name.parent())
@@ -89,29 +105,48 @@ fn detect_node_types(changes: Vec<&ChangeSet>) -> io::Result<()> {
         .collect();
     println!("Entries: {:?}", dirs);
 
-    dirs.iter().for_each(|d| {
-        let (dir_name, t) = get_type(d.to_owned());
+    let entries: Vec<Entry> = dirs
+        .iter()
+        .map(|dir| {
+            let (dir_name, node_type) = get_type(dir).unwrap();
 
-        println!("type for dir = {} is = {:?}", dir_name, t);
-    });
+            println!("type for dir = {} is = {:?}", dir_name, node_type);
 
-    Ok(())
+            Entry {
+                slug: String::from(dir_name),
+                entry_type: node_type,
+            }
+        })
+        .collect();
+
+    Ok(entries)
 }
 
-fn get_type(dirs_files: (String, Vec<String>)) -> (String, Type) {
+fn get_type<'a>(dirs_files: &'a (String, Vec<String>)) -> Option<(&'a str, Type)> {
     let (dir_name, files) = dirs_files;
-    let t = match &files[..] {
-        [x] => {
-            let t = match x {
-                s if s.matches(NODE_FILE_CONSTANTS.get(0).unwrap()).count() > 0 => NodeType::Text,
-                s if s.matches(NODE_FILE_CONSTANTS.get(1).unwrap()).count() > 0 => NodeType::Figure,
-                s if s.matches(NODE_FILE_CONSTANTS.get(2).unwrap()).count() > 0 => NodeType::Data,
-                _ => panic!("Non possible pattern"),
-            };
-            Type::Single(t)
-        }
-        [_x, _y] => Type::Binary(NodeType::Text, NodeType::Text),
-        _ => Type::Complex(NodeType::Text, NodeType::Data, NodeType::Figure),
-    };
-    (dir_name, t)
+    match &files[..] {
+        [x] => Some((dir_name, Type::Single(infer_type(x).unwrap()))),
+        [x, y] => Some((
+            dir_name,
+            Type::Binary(infer_type(x).unwrap(), infer_type(y).unwrap()),
+        )),
+        [x, y, z] => Some((
+            dir_name,
+            Type::Complex(
+                infer_type(x).unwrap(),
+                infer_type(y).unwrap(),
+                infer_type(z).unwrap(),
+            ),
+        )),
+        _ => None,
+    }
+}
+
+fn infer_type(s: &String) -> Option<NodeType> {
+    match s {
+        s if s.matches(NODE_FILE_CONSTANTS.get(0).unwrap()).count() > 0 => Some(NodeType::Text),
+        s if s.matches(NODE_FILE_CONSTANTS.get(1).unwrap()).count() > 0 => Some(NodeType::Figure),
+        s if s.matches(NODE_FILE_CONSTANTS.get(2).unwrap()).count() > 0 => Some(NodeType::Data),
+        _ => None,
+    }
 }

@@ -1,7 +1,7 @@
 use crossterm::tty::IsTty;
 use std::{
     env,
-    io::{self, Read},
+    io::{self, Error, Read},
     path::Path,
 };
 
@@ -17,8 +17,12 @@ fn main() -> io::Result<()> {
     // Parse the incoming changeset into a format we know ie. the Changeset type
     if let Some(changeset_raw) = arguments.nth(1) {
         match parse_args(changeset_raw.as_str()) {
-            Some(changeset) => run(changeset),
-            None => bad_input(),
+            Some(changeset) => run(changeset)?,
+            None => {
+                bad_input();
+                let error = Error::new(io::ErrorKind::Other, "Bad input");
+                return Err(error);
+            }
         }
     } else {
         let is_tty = io::stdin().is_tty();
@@ -27,7 +31,7 @@ fn main() -> io::Result<()> {
         } else {
             let from_stdin = parse_stdin()?;
             match parse_args(from_stdin.as_str()) {
-                Some(changeset) => run(changeset),
+                Some(changeset) => run(changeset)?,
                 None => todo!(),
             }
         }
