@@ -1,4 +1,4 @@
-use std::{fs, io, path::Path, time::Instant};
+use std::{fmt::Display, fs, io, path::Path, time::Instant};
 
 const NODE_FILE_CONSTANTS: [&str; 3] = ["README.md", "FIGURE.", "DATA."];
 
@@ -31,11 +31,27 @@ pub enum NodeType {
     Figure,
 }
 
+impl Display for NodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            NodeType::Text => write!(f, "T"),
+            NodeType::Data => write!(f, "D"),
+            NodeType::Figure => write!(f, "F"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Type {
     Single(NodeType),
     Binary(NodeType, NodeType),
     Complex(NodeType, NodeType, NodeType),
+}
+
+impl Display for Type {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }
 
 pub fn run(changes: Vec<ChangeSet>) -> io::Result<()> {
